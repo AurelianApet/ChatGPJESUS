@@ -7,12 +7,14 @@ import { Configuration, OpenAIApi } from 'openai';
 import { ScrollView } from 'react-native-virtualized-view';
 import gpt_Avatar from '../../assets/cross.png';
 import me_Avatar from '../../assets/me.png';
+import { Questions } from './Questions';
 
 const gptAvatar = Image.resolveAssetSource(gpt_Avatar).uri;
 const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
 
 // const OPENAI_API_KEY = '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'
-const OPENAI_API_KEY = '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'
+// const OPENAI_API_KEY = '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'
+const OPENAI_API_KEY = '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'
 
 const { width, height } = Dimensions.get('window');
 
@@ -80,7 +82,7 @@ const DetailCategoryPage = ({navigation}) => {
                 author: gpt,
                 createdAt: Date.now(),
                 id: uuid.v1(),
-                text: responseText,
+                text: `Let's see what the Bible teaches us about this.${responseText}`,
                 type: 'text',
                 messageType: "online",
                 isSent: true,
@@ -116,7 +118,7 @@ const DetailCategoryPage = ({navigation}) => {
                 <Text style={styles.helloTitle}>{`Hello`}</Text>
                 <Text style={styles.name}>{userName}</Text>
                 {/* <Text style={styles.text}>{`What is bothering you, \n My Blessed child?`}</Text> */}
-                <Text style={styles.text}>{`What are you feeling\n${currentTopic} About today?`}</Text>
+                <Text style={styles.text}>{Questions[currentTopic]}</Text>
                 <Chat 
                   enableAnimation={true} 
                   messages={messages}
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
       // bottom: height / 100 * 48,
     },
     text: {
-      fontSize: 28,
+      fontSize: 22,
       fontWeight: '100',
       fontFamily: 'JosefinSans_300Light_Italic',
       textAlign: 'left',
