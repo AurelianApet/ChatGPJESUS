@@ -1,12 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { AppContext } from './AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import 'react-native-url-polyfill/auto';
-// import AppLoading from 'expo-app-loading';
 import LeJourSerif from "./assets/LeJourSerif.ttf";
 import LibreBaskerville from "./assets/LibreBaskerville.ttf";
 import {
@@ -27,12 +25,16 @@ import {
   JosefinSans_700Bold_Italic,
 } from '@expo-google-fonts/josefin-sans';
 import { AlexBrush_400Regular } from '@expo-google-fonts/alex-brush';
+import { MenuProvider } from 'react-native-popup-menu';
 
 import MainPage from './src/page/MainPage';
 import NameEnterPage from './src/page/NameEnterPage';
 import SelectCategory from './src/page/SelectCatagory';
 import MoreCategoryPage from './src/page/MoreCategoryPage';
 import DetailCategoryPage from './src/page/DetailCategory';
+import FAQPage from './src/page/FAQPage';
+import APIKeyEnterPage from './src/page/APIKeyEnterPage';
+import { loadOpenAIKey } from './src/page/utill';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,48 +60,73 @@ export default function App() {
     LibreBaskerville
   });
 
-  const [initialRouter, setInitialRouter] = useState("nameEnter")
+  const [initialRouter, setInitialRouter] = useState("APIKeyEnter")
   const [userName, setUserName] = useState(null);
   const [currentTopic, setCurrentTopic] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [openAIkey, setOpenAIkey] = useState(null);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    (async () => {
+      let AIkey = await loadOpenAIKey();
+      if(AIkey) {
+        setOpenAIkey(AIkey)
+        setInitialRouter("nameEnter")
+      }
+      setLoading(false)
+    })()
+  }, [])
+
+  if (!fontsLoaded || loading) {
     return null;
   } else {
     return (
-      <SafeAreaView style={{flex: 1}}>
-        <AppContext.Provider value={{userName, setUserName, currentTopic, setCurrentTopic}} >
-          <NavigationContainer>
-            <Stack.Navigator initialRouteName={initialRouter} screenOptions={{headerShown: false}}>
-              <Stack.Screen
-                name="main"
-                component={MainPage}
-                options={{}}
-              />
-              <Stack.Screen
-                name="selectCategory"
-                component={SelectCategory}
-                options={{}}
-              />
-              <Stack.Screen
-                name="nameEnter"
-                component={NameEnterPage}
-                options={{}}
-              />
-              <Stack.Screen
-                name="moreCategory"
-                component={MoreCategoryPage}
-                options={{}}
-              />
-              <Stack.Screen
-                name="detailCategory"
-                component={DetailCategoryPage}
-                options={{}}
-              />
+      <MenuProvider>
+        <SafeAreaView style={{flex: 1}}>
+          <AppContext.Provider value={{userName, setUserName, currentTopic, setCurrentTopic, openAIkey, setOpenAIkey}} >
+            <NavigationContainer>
+              <Stack.Navigator initialRouteName={initialRouter} screenOptions={{headerShown: false, unmountOnBlur: true}}>
+                <Stack.Screen
+                  name="main"
+                  component={MainPage}
+                  options={{}}
+                />
+                <Stack.Screen
+                  name="selectCategory"
+                  component={SelectCategory}
+                  options={{unmountOnBlur: true}}
+                />
+                <Stack.Screen
+                  name="nameEnter"
+                  component={NameEnterPage}
+                  options={{unmountOnBlur: true}}
+                />
+                <Stack.Screen
+                  name="moreCategory"
+                  component={MoreCategoryPage}
+                  options={{unmountOnBlur: true}}
+                />
+                <Stack.Screen
+                  name="detailCategory"
+                  component={DetailCategoryPage}
+                  options={{unmountOnBlur: true}}
+                />
+                <Stack.Screen
+                  name="FAQ"
+                  component={FAQPage}
+                  options={{}}
+                />
+                <Stack.Screen
+                  name="APIKeyEnter"
+                  component={APIKeyEnterPage}
+                  options={{unmountOnBlur: true}}
+                />
 
-            </Stack.Navigator>
-          </NavigationContainer>
-        </AppContext.Provider>
-      </SafeAreaView>
+              </Stack.Navigator>
+            </NavigationContainer>
+          </AppContext.Provider>
+        </SafeAreaView>
+      </MenuProvider>
     );
   }
 }

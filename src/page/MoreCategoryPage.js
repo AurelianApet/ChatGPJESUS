@@ -3,6 +3,13 @@ import { StyleSheet, Text, View, Dimensions, TouchableOpacity, Image } from 'rea
 import { Circle, Text as SvgText, TextPath, TSpan, G, Svg }
   from 'react-native-svg';
 import { AppContext } from '../../AppContext';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+ } from "react-native-popup-menu";
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 const images = {
@@ -17,33 +24,33 @@ const images = {
 const SvgComponent = ({title, image}) => (
   <>
     <Svg position="absolute" height="200" width="200"
-          viewBox="0 0 300 300">
-          <G id="circle">
-            <Circle
-              r={80}
-              x={150}
-              y={120}
-              fill="none"
-              stroke="#fff"
-              strokeWidth={14}
-              transform="rotate(-165)"
-            />
-          </G>
-          <SvgText fill="#000" fontSize="16" fontFamily="LibreBaskerville">
-            <TextPath href="#circle">
-              <TSpan dx="0" dy={-20}>
-                {title}
-              </TSpan>
-            </TextPath>
-          </SvgText>
-        </Svg>
-        <View>
-          <Image
-            style={{ height: 120, width: 120, borderRadius: 60,
-              marginTop: 20 }}
-            source={images[image]}
-          />
-        </View>
+      viewBox="0 0 300 300">
+      <G id="circle">
+        <Circle
+          r={80}
+          x={150}
+          y={120}
+          fill="none"
+          stroke="#fff"
+          strokeWidth={14}
+          transform="rotate(-165)"
+        />
+      </G>
+      <SvgText fill="#000" fontSize="16" fontFamily="LibreBaskerville">
+        <TextPath href="#circle">
+          <TSpan dx="0" dy={-20}>
+            {title}
+          </TSpan>
+        </TextPath>
+      </SvgText>
+    </Svg>
+    <View>
+      <Image
+        style={{ height: 120, width: 120, borderRadius: 60,
+          marginTop: 20 }}
+        source={images[image]}
+      />
+    </View>
   </>
 );
 
@@ -55,9 +62,41 @@ const MoreCategoryPage = ({navigation}) => {
       navigation.navigate('detailCategory')
     }
 
+    const handleNaviate = (router) => {
+      navigation.navigate(router)
+    }
+
     return (
         <View style={styles.container}>
           <Image source={require('../../assets/cross.png')} style={styles.cross} />
+          <Menu style={styles.dropMenu}>
+            <MenuTrigger
+                customStyles={{
+                    triggerWrapper: {
+                        top: -40,
+                        left: -10
+                    },
+                }}
+            >
+                <Ionicons name="reorder-three" size={50} color="#ba9e87" />
+            </MenuTrigger>
+            <MenuOptions>
+              <MenuOption onSelect={() => handleNaviate("FAQ")} customStyles={{
+                optionWrapper: {
+                  padding: 10
+                },
+              }} >
+                <Text style={styles.optionText}>FAQ</Text>
+              </MenuOption>
+              <MenuOption onSelect={() => handleNaviate("AboutUs")} customStyles={{
+                optionWrapper: {
+                  padding: 10
+                },
+              }} >
+                <Text style={styles.optionText}>About Us</Text>
+              </MenuOption>
+            </MenuOptions>
+          </Menu>
           <Text style={styles.headerTitle}>Important</Text>
           <Text style={styles.cvTitle}>Conversations</Text>
           <Text style={styles.bibleTitle}>What does the bible say about....</Text>
@@ -180,6 +219,16 @@ const styles = StyleSheet.create({
       position: "absolute",
       top: 25,
       right: 20,
+    },
+    dropMenu: {
+      position: "absolute",
+      top: 30,
+      left: 10,
+      zIndex: 10000
+    },
+    optionText: {
+      fontSize: 18,
+      color: '#9d8673'
     }
   });
 

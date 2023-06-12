@@ -20,11 +20,88 @@ index 41644fd..801db5b 100644
          width: 32,
      },
      placeholder: {
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
+index 3fe8d2f..586d1c5 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
+@@ -22,7 +22,7 @@ const animate = () => {
+ // eslint-disable-next-line jest/require-hook
+ dayjs.extend(calendar);
+ /** Entry component, represents the complete chat */
+-export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat, disableImageGallery, emptyState, enableAnimation, flatListProps, inputProps, isAttachmentUploading, isLastPage, l10nOverride, locale = 'en', messages, onAttachmentPress, onEndReached, onMessageLongPress, onMessagePress, onPreviewDataFetched, onSendPress, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, sendButtonVisibilityMode = 'editing', showUserAvatars = false, showUserNames = false, textInputProps, theme = defaultTheme, timeFormat, usePreviewData = true, user, }) => {
++export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat, disableImageGallery, emptyState, enableAnimation, flatListProps, inputProps, isAttachmentUploading, isLastPage, l10nOverride, locale = 'en', messages, onAttachmentPress, onEndReached, onMessageLongPress, onMessagePress, onPreviewDataFetched, onSendPress, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, sendButtonVisibilityMode = 'editing', showUserAvatars = false, showUserNames = false, textInputProps, theme = defaultTheme, timeFormat, usePreviewData = true, user, customHeaderChatComponent, isOpenAIInput, buttonGroupComponent }) => {
+     const { container, emptyComponentContainer, emptyComponentTitle, flatList, flatListContentContainer, footer, footerLoadingPage, header, keyboardAccessoryView, } = styles({ theme });
+     const { onLayout, size } = useComponentSize();
+     const animationRef = React.useRef(false);
+@@ -137,6 +137,7 @@ export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat,
+                 showStatus,
+                 showUserAvatars,
+                 usePreviewData,
++                buttonGroupComponent
+             } }));
+     }, [
+         enableAnimation,
+@@ -166,7 +167,7 @@ export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat,
+                 justifyContent: chatMessages.length !== 0 ? undefined : 'center',
+                 paddingTop: insets.bottom,
+             },
+-        ], initialNumToRender: 10, ListEmptyComponent: renderListEmptyComponent, ListFooterComponent: renderListFooterComponent, ListHeaderComponent: React.createElement(View, null), ListHeaderComponentStyle: header, maxToRenderPerBatch: 6, onEndReachedThreshold: 0.75, style: flatList, showsVerticalScrollIndicator: false, ...unwrap(flatListProps), data: chatMessages, inverted: true, keyboardDismissMode: 'interactive', keyExtractor: keyExtractor, onEndReached: handleEndReached, ref: list, renderItem: renderItem, ...panHandlers })), [
++        ], initialNumToRender: 10, ListEmptyComponent: renderListEmptyComponent, ListFooterComponent: customHeaderChatComponent, ListHeaderComponent: React.createElement(View, null), ListHeaderComponentStyle: header, maxToRenderPerBatch: 6, onEndReachedThreshold: 0.75, style: flatList, showsVerticalScrollIndicator: false, ...unwrap(flatListProps), data: chatMessages, inverted: true, keyboardDismissMode: 'interactive', keyExtractor: keyExtractor, onEndReached: handleEndReached, ref: list, renderItem: renderItem, ...panHandlers })), [
+         chatMessages,
+         flatList,
+         flatListContentContainer,
+@@ -197,6 +198,7 @@ export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat,
+                                 renderScrollable,
+                                 sendButtonVisibilityMode,
+                                 textInputProps,
++                                isOpenAIInput
+                             } }))),
+                     React.createElement(ImageView, { imageIndex: imageViewIndex, images: gallery, onRequestClose: handleRequestClose, visible: isImageViewVisible }))))));
+ };
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
+index 6da122e..05102e2 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
+@@ -7,7 +7,7 @@ import { SendButton } from '../SendButton';
+ import styles from './styles';
+ /** Bottom bar input component with a text input, attachment and
+  * send buttons inside. By default hides send button when text input is empty. */
+-export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicatorProps, isAttachmentUploading, onAttachmentPress, onSendPress, sendButtonVisibilityMode, textInputProps, }) => {
++export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicatorProps, isAttachmentUploading, onAttachmentPress, onSendPress, sendButtonVisibilityMode, textInputProps, isOpenAIInput}) => {
+     var _a, _b;
+     const l10n = React.useContext(L10nContext);
+     const theme = React.useContext(ThemeContext);
+@@ -39,7 +39,7 @@ export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicat
+                     color: theme.colors.inputText,
+                     style: marginRight,
+                 } })) : (!!onAttachmentPress && (React.createElement(AttachmentButton, { ...unwrap(attachmentButtonProps), onPress: onAttachmentPress })))),
+-        React.createElement(TextInput, { multiline: true, placeholder: l10n.inputPlaceholder, placeholderTextColor: `${String(theme.colors.inputText)}80`, underlineColorAndroid: 'transparent', ...textInputProps, 
++        React.createElement(TextInput, { multiline: true, placeholder: isOpenAIInput ? isOpenAIInput : l10n.inputPlaceholder, placeholderTextColor: `${String(theme.colors.inputText)}80`, underlineColorAndroid: 'transparent', ...textInputProps, 
+             // Keep our implementation but allow user to use these `TextInputProps`
+             style: [input, textInputProps === null || textInputProps === void 0 ? void 0 : textInputProps.style], onChangeText: handleChangeText, value: value }),
+         sendButtonVisibilityMode === 'always' ||
 diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Message/Message.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Message/Message.js
-index 724c45d..10a346a 100644
+index 724c45d..f307ff3 100644
 --- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Message/Message.js
 +++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Message/Message.js
-@@ -68,7 +68,23 @@ export const Message = React.memo(({ enableAnimation, message, messageWidth, onM
+@@ -11,7 +11,7 @@ import styles from './styles';
+ /** Base component for all message types in the chat. Renders bubbles around
+  * messages and status. Sets maximum width for a message for
+  * a nice look on larger screens. */
+-export const Message = React.memo(({ enableAnimation, message, messageWidth, onMessagePress, onMessageLongPress, onPreviewDataFetched, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, roundBorder, showAvatar, showName, showStatus, showUserAvatars, usePreviewData, }) => {
++export const Message = React.memo(({ enableAnimation, message, messageWidth, onMessagePress, onMessageLongPress, onPreviewDataFetched, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, roundBorder, showAvatar, showName, showStatus, showUserAvatars, usePreviewData, buttonGroupComponent }) => {
+     const theme = React.useContext(ThemeContext);
+     const user = React.useContext(UserContext);
+     const currentUserIsAuthor = message.type !== 'dateHeader' && (user === null || user === void 0 ? void 0 : user.id) === message.author.id;
+@@ -61,6 +61,7 @@ export const Message = React.memo(({ enableAnimation, message, messageWidth, onM
+                         onPreviewDataFetched,
+                         showName,
+                         usePreviewData,
++                        buttonGroupComponent
+                     } }))(
+                 // type-coverage:ignore-next-line
+                 excludeDerivedMessageProps(message), messageWidth, showName);
+@@ -68,7 +69,23 @@ export const Message = React.memo(({ enableAnimation, message, messageWidth, onM
                  return null;
          }
      };
@@ -49,19 +126,69 @@ index 724c45d..10a346a 100644
          React.createElement(Avatar, { ...{
                  author: message.author,
                  currentUserIsAuthor,
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/StatusIcon/StatusIcon.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/StatusIcon/StatusIcon.js
+index b2ffa0d..9ba8da8 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/StatusIcon/StatusIcon.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/StatusIcon/StatusIcon.js
+@@ -14,7 +14,7 @@ export const StatusIcon = React.memo(({ currentUserIsAuthor, showStatus, status,
+                 statusIcon = (_f = (_e = (_d = theme.icons) === null || _d === void 0 ? void 0 : _d.errorIcon) === null || _e === void 0 ? void 0 : _e.call(_d)) !== null && _f !== void 0 ? _f : (React.createElement(Image, { source: require('../../assets/icon-error.png'), style: { tintColor: theme.colors.error }, testID: 'ErrorIcon' }));
+                 break;
+             case 'seen':
+-                statusIcon = (_j = (_h = (_g = theme.icons) === null || _g === void 0 ? void 0 : _g.seenIcon) === null || _h === void 0 ? void 0 : _h.call(_g)) !== null && _j !== void 0 ? _j : (React.createElement(Image, { source: require('../../assets/icon-seen.png'), style: { tintColor: theme.colors.primary }, testID: 'SeenIcon' }));
++                statusIcon = (_j = (_h = (_g = theme.icons) === null || _g === void 0 ? void 0 : _g.seenIcon) === null || _h === void 0 ? void 0 : _h.call(_g)) !== null && _j !== void 0 ? _j : (React.createElement(Image, { source: require('../../assets/icon-seen.png'), style: { tintColor: "red" }, testID: 'SeenIcon' }));
+                 break;
+             case 'sending':
+                 statusIcon = (_m = (_l = (_k = theme.icons) === null || _k === void 0 ? void 0 : _k.sendingIcon) === null || _l === void 0 ? void 0 : _l.call(_k)) !== null && _m !== void 0 ? _m : (React.createElement(CircularActivityIndicator, { color: theme.colors.primary, size: 10 }));
+@@ -23,7 +23,7 @@ export const StatusIcon = React.memo(({ currentUserIsAuthor, showStatus, status,
+                 break;
+         }
+     }
+-    return currentUserIsAuthor ? (React.createElement(View, { style: styles.container, testID: 'StatusIconContainer' }, statusIcon)) : null;
++    return (React.createElement(View, { style: styles.container, testID: 'StatusIconContainer' }, statusIcon));
+ });
+ const styles = StyleSheet.create({
+     container: {
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/TextMessage/TextMessage.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/TextMessage/TextMessage.js
+index 2ac5fdb..0671711 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/TextMessage/TextMessage.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/TextMessage/TextMessage.js
+@@ -4,7 +4,7 @@ import { Linking, Text, View } from 'react-native';
+ import ParsedText from 'react-native-parsed-text';
+ import { excludeDerivedMessageProps, getUserName, ThemeContext, UserContext, } from '../../utils';
+ import styles from './styles';
+-export const TextMessage = ({ enableAnimation, message, messageWidth, onPreviewDataFetched, showName, usePreviewData, }) => {
++export const TextMessage = ({ enableAnimation, message, messageWidth, onPreviewDataFetched, showName, usePreviewData, buttonGroupComponent}) => {
+     const theme = React.useContext(ThemeContext);
+     const user = React.useContext(UserContext);
+     const [previewData, setPreviewData] = React.useState(message.previewData);
+@@ -66,6 +66,8 @@ export const TextMessage = ({ enableAnimation, message, messageWidth, onPreviewD
+         /* istanbul ignore next */ showName
+             ? renderPreviewHeader(getUserName(message.author))
+             : null,
+-        React.createElement(Text, { style: text }, message.text)));
++        React.createElement(Text, { style: text }, message.text),
++        message.isClicked ? buttonGroupComponent(message) : null,   
++        ));
+ };
+ //# sourceMappingURL=TextMessage.js.map
+\ No newline at end of file
 diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js b/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
-index f5c1cc7..008e2db 100644
+index f5c1cc7..df98218 100644
 --- a/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
 +++ b/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
-@@ -2,7 +2,7 @@
+@@ -2,9 +2,10 @@
  export const l10n = {
      en: {
          attachmentButtonAccessibilityLabel: 'Send media',
 -        emptyChatPlaceholder: 'No messages here yet',
 +        emptyChatPlaceholder: '',
          fileButtonAccessibilityLabel: 'File',
-         inputPlaceholder: 'Message',
+-        inputPlaceholder: 'Message',
++        inputPlaceholder: 'Type your question here…',
++        inputOpenAIPlaceholder: 'Type your OpenAI key here…',
          sendButtonAccessibilityLabel: 'Send',
+     },
+     es: {
 diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/theme.js b/node_modules/@flyerhq/react-native-chat-ui/lib/theme.js
 index da1426a..cb380a7 100644
 --- a/node_modules/@flyerhq/react-native-chat-ui/lib/theme.js
