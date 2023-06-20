@@ -1,8 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// export const OPENAI_API_KEY = "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"
-export const OPENAI_API_KEY = "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" // new
-// export const OPENAI_API_KEY = "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" // Venus
+export const Max_Api_Count = 10;
 
 export const loadDataFromStorage = async (category) => {
     let data = await AsyncStorage.getItem(`@${category}`)
@@ -15,11 +13,31 @@ export const saveDataToStorage = async (category, data) => {
 }
 
 export const loadOpenAIKey = async () => {
-    let key = await AsyncStorage.getItem(`@OpenAIKey`)
+    let key = await AsyncStorage.getItem(`@UserOpenAIKey`)
     return key;
 }
 
 export const saveOpenAIKey = async (key) => {
-    await AsyncStorage.setItem(`@OpenAIKey`, key)
+    await AsyncStorage.setItem(`@UserOpenAIKey`, key)
+    return true;
+}
+
+export const loadMonth = async () => {
+    let month = await AsyncStorage.getItem(`@Month`)
+    return month ? parseInt(month) : 0;
+}
+
+export const saveMonth = async (month) => {
+    await AsyncStorage.setItem(`@Month`, month.toString())
+    return true;
+}
+
+export const loadApiUsingCount = async () => {
+    let count = await AsyncStorage.getItem(`@ApiUsingCount`)
+    return parseInt(count);
+}
+
+export const saveApiUsingCount = async (count) => {
+    await AsyncStorage.setItem(`@ApiUsingCount`, count.toString())
     return true;
 }

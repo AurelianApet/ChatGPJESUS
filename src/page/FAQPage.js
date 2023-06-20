@@ -1,6 +1,5 @@
-import { useContext, useEffect } from 'react'
+import { useEffect } from 'react'
 import { StyleSheet, Text, View, Dimensions, UIManager, Image } from 'react-native';
-import { AppContext } from '../../AppContext';
 import {
   Menu,
   MenuOptions,
@@ -33,8 +32,6 @@ const FAQPage = ({navigation}) => {
         }
     }, []);
 
-    // const {setCurrentTopic} = useContext(AppContext)
-
     const handleNaviate = (router) => {
       navigation.navigate(router)
     }
@@ -54,6 +51,13 @@ const FAQPage = ({navigation}) => {
                 <Ionicons name="reorder-three" size={50} color="#ba9e87" />
             </MenuTrigger>
             <MenuOptions>
+              <MenuOption onSelect={() => handleNaviate("moreCategory") } customStyles={{
+                optionWrapper: {
+                  padding: 10
+                },
+              }} >
+                <Text style={styles.optionText}>Conversation</Text>
+              </MenuOption>
               <MenuOption onSelect={() => handleNaviate("FAQ")} customStyles={{
                 optionWrapper: {
                   padding: 10
@@ -71,7 +75,7 @@ const FAQPage = ({navigation}) => {
             </MenuOptions>
           </Menu>
           <Text style={styles.headerTitle}>FAQ</Text>
-          <Text style={styles.cvTitle}>FAQ</Text>
+          <Text style={styles.cvTitle}></Text>
           <AccordionList
               data={data}
               customTitle={item => <Text style={styles.AccordionTitle}>{item.title}</Text>}
@@ -107,15 +111,12 @@ const styles = StyleSheet.create({
       paddingRight: 40,
     },
     AccordionTitle: {
-      // backgroundColor: "#d9d9d9"
       color: '#3c2819',
-      fontFamily: 'AlexBrush_400Regular',
-      // fontFamily: 'JosefinSans_300Light_Italic',
+      fontFamily: 'JosefinSans_300Light_Italic',
       fontSize: 30
     },
     AccordionBody: {
-      fontFamily: 'AlexBrush_400Regular',
-      // fontFamily: 'JosefinSans_300Light_Italic',
+      fontFamily: 'JosefinSans_300Light_Italic',
       fontSize: 20
     },
     cross: {

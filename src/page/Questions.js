@@ -6,3 +6,9 @@ export const Questions = {
     "HELPLESSNESS" : "What is happening in your life that is making you feel so uncertain,\nmy blessed child?",
     "GRIEF & LOSS" : "What is troubling you today,\nor who or what are you missing,\nmy blessed child?"
 }
+
+export const PreSentences = [
+    "Let's see what the Bible says about this...",
+    "The Bible teaches us...",
+    "The Bible says..."
+]

@@ -1,7 +1,7 @@
 import { Chat, defaultTheme } from '@flyerhq/react-native-chat-ui'
 import { useState, useContext, useEffect } from 'react'
 import { ImageBackground, StyleSheet, Text, View, Dimensions, TouchableOpacity, Image, Modal, TouchableHighlight } from 'react-native';
-import uuid from 'react-native-uuid';
+import * as Crypto from 'expo-crypto';
 import { AppContext } from '../../AppContext';
 import {
   Menu,
@@ -9,12 +9,16 @@ import {
   MenuOption,
   MenuTrigger,
  } from "react-native-popup-menu";
+import * as Linking from 'expo-linking';
 import { Ionicons, AntDesign, Feather} from '@expo/vector-icons';
 import { Configuration, OpenAIApi } from 'openai';
-import { loadDataFromStorage, saveDataToStorage } from './utill';
+import { Max_Api_Count, loadDataFromStorage, loadOpenAIKey, saveApiUsingCount, saveDataToStorage } from './utill';
+import { SkypeIndicator } from 'react-native-indicators';
+import Spinner from 'react-native-loading-spinner-overlay';
 
 import gpt_Avatar from '../../assets/cross.png';
 import me_Avatar from '../../assets/me.png';
+import { PreSentences } from './Questions';
 
 const gptAvatar = Image.resolveAssetSource(gpt_Avatar).uri;
 const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
@@ -22,7 +26,7 @@ const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
 const { width, height } = Dimensions.get('window');
 
 const SelectCategory = ({navigation}) => {
-    const {userName, openAIkey} = useContext(AppContext)
+    const {userName, openAIkey, AIkeyUsingCount, setAIkeyUsingCount} = useContext(AppContext)
     const [messages, setMessages] = useState([])
     const [userId, setUserId] = useState("me")
     const [isAnswer, setIsAnswer] = useState(false)
@@ -30,14 +34,32 @@ const SelectCategory = ({navigation}) => {
     const [userQuestion, setUserQuestion] = useState(null)
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState(null)
+    const [isPreSentence, setIsPreSentence] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [messagesForApi, setMessagesForApi] = useState([
+      {
+        "role": "system", "content": "Will give answer based on what is there taken from the bible"
+      }
+    ]);
     const gpt = { id: '06c33e8b-e835-4736-80f4-63f44b66666c', imageUrl: gptAvatar}
     const me = { id: '06c33e8b-e835-4736-80f4-63f44b66666d', imageUrl: meAvatar }
 
-    const configuration = new Configuration({
-      apiKey: openAIkey,
-    });
-
-    const openai = new OpenAIApi(configuration);
+    useEffect(() => {
+      return navigation.addListener("focus", () => {
+        setMessages([])
+        setIsAnswer(false)
+        setFirstAnswer("First")
+        setUserQuestion(null)
+        setModalVisible(false)
+        setError(null)
+        setLoading(false)
+        setMessagesForApi([
+          {
+            "role": "system", "content": "Will give answer based on what is there taken from the bible"
+          }
+        ])
+      });
+  }, [navigation]);
 
     const addMessage = (message) => {
       setMessages([message, ...messages])
@@ -52,18 +74,17 @@ const SelectCategory = ({navigation}) => {
         const messageTwo = {
           author: userId === "gpt" ? gpt : me,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: message.text,
           type: 'text',
           messageType: "online",
-          // status: "seen",
           isSent: true,
           isReceived: true
         }
         const messageOne = {
           author: gpt,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: `Please tell me more...`,
           type: 'text',
           messageType: "online",
@@ -72,36 +93,55 @@ const SelectCategory = ({navigation}) => {
         }
         addDoubleMessage(messageOne, messageTwo)
         setFirstAnswer("Second")
-        setIsAnswer(true)
-      } else {
+        setIsAnswer(false)
+      } else if(firstAnswer === "Second") {
         const textMessage = {
           author: me,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: message.text,
           type: 'text',
           messageType: "online",
           isSent: true,
           isReceived: true,
-          // status: "seen",
+        }
+        addMessage(textMessage)
+        setIsAnswer(true);
+        setUserQuestion(message.text)
+        setFirstAnswer("Third")
+      } else {
+        const textMessage = {
+          author: me,
+          createdAt: Date.now(),
+          id: Crypto.randomUUID(),
+          text: message.text,
+          type: 'text',
+          messageType: "online",
+          isSent: true,
+          isReceived: true,
         }
         addMessage(textMessage)
         setIsAnswer(true);
         setUserQuestion(message.text)
       }
+
+      let tempMessage = [...messagesForApi];
+        tempMessage.push({
+          "role" : "user",
+          "content" : message.text
+        });
     }
 
     const onSelectCategory = (category) => {
       const textMessage = {
         author: me,
         createdAt: Date.now(),
-        id: uuid.v1(),
+        id: Crypto.randomUUID(),
         text: `I am feeling ${category}`,
         type: 'text',
         messageType: "online",
         isSent: true,
         isReceived: true,
-        status: "seen"
       }
       addMessage(textMessage)
       setUserQuestion(`I am feeling ${category}`)
@@ -113,6 +153,15 @@ const SelectCategory = ({navigation}) => {
       navigation.navigate(router)
     }
 
+    const handleOpenAILink = (router) => {
+      setModalVisible(false)
+      navigation.navigate(router)
+    }
+
+    const handleOpenAIWebsite = () => {
+      Linking.openURL('https://platform.openai.com/account/api-keys');
+    }
+
     const loadLastestData = async () => {
       let chatHistory = await loadDataFromStorage("threeCategory");
       setMessages(chatHistory)
@@ -122,37 +171,59 @@ const SelectCategory = ({navigation}) => {
       (
         async () => {
           if(isAnswer && firstAnswer === "Third") {
+            let willUseAIkey;
+            if(AIkeyUsingCount > 0) {
+              willUseAIkey = openAIkey
+            } else {
+              let savedOpenAIkey = await loadOpenAIKey();
+              willUseAIkey = savedOpenAIkey
+            }
+
+            console.log("willUseAIkey", willUseAIkey, AIkeyUsingCount)
+            const configuration = new Configuration({
+              apiKey: willUseAIkey,
+            });
+        
+            const openai = new OpenAIApi(configuration);
+            setLoading(true)
             try {
               let prompt = `"${userQuestion}" of answer based on what is there taken from the bible`
-              const completion = await openai.createCompletion({
-                model: "text-davinci-002",
-                // model: 'text-davinci-003',
-                // temperature: 0,
-                // max_tokens: 100,
-                // top_p: 1,
-                // frequency_penalty: 0.0,
-                // presence_penalty: 0.0,
-                // stop: ['/'],
-                prompt: prompt,
+              const completion = await openai.createChatCompletion({
+                model: 'gpt-3.5-turbo',
+                messages: messagesForApi
               });
 
-              let responseText = completion.data.choices[0].text;
+              let responseText = completion.data.choices[0].message.content.replace('As an AI language model, ', '');
 
               const textMessagefromGPT = {
                 author: gpt,
                 createdAt: Date.now(),
-                id: uuid.v1(),
-                text: `Let's see what the Bible teaches us about this.${responseText}`,
+                id: Crypto.randomUUID(),
+                text: searchLinkTexts(responseText, isPreSentence),
                 type: 'text',
                 messageType: "online",
                 isSent: true,
                 isReceived: true
               }
               addMessage(textMessagefromGPT)
+              
+              let tempMessage = [...messagesForApi];
+              tempMessage.push({
+                "role" : "assistant",
+                "content" : responseText
+              });
+              setMessagesForApi(tempMessage)
+
               setIsAnswer(false)
+              setIsPreSentence(true)
+              await saveApiUsingCount(AIkeyUsingCount - 1);
+              setAIkeyUsingCount(AIkeyUsingCount - 1);
+              setLoading(false)
             } catch (error) {
-              setError("It seems that your OpenAI key was expired")
-              setModalVisible(true)
+              console.log("API Error", error)
+              setLoading(true)
+              setError(`You used ${Max_Api_Count} times Global Api key in this month.\nSo you can use your own Api key.\nIt seems that your own OpenAI key was expired or you didn't input your own Api key`)
+              setModalVisible(false)
             }
           } else if(!isAnswer && firstAnswer === "Third") {
             await saveDataToStorage("threeCategory", messages)
@@ -160,6 +231,39 @@ const SelectCategory = ({navigation}) => {
         }
       )();
     }, [isAnswer, firstAnswer])
+
+    const searchLinkTexts = (text, isStart) => {
+      let updatedText = text.replaceAll(" as an AI language model,", "");
+      updatedText = updatedText.replaceAll("I cannot", "ChatGPJEsus cannot")
+      let wordArray = updatedText.split(" ");
+      let filteredTexts = wordArray.map((word, index) => {
+        if(word.match(/[0-9]:[0-9]/)) {
+          if(word.indexOf("\n") === -1) return <Text key={index} style={styles.linkText} onPress={() => searchWord(wordArray[index - 1] + " " + word)}>{word + " "}</Text>
+          else {
+            subWords = word.split("\n");
+            return <><Text key={index} style={styles.linkText} onPress={() => searchWord(wordArray[index - 1] + " " + subWords[0])}>{subWords[0] + "\n"}</Text><Text key={index + 10000}>{subWords[1]}</Text></>
+          }
+        }
+
+        else {
+          if((index < wordArray.length - 1) && wordArray[index + 1].match(/[0-9]:[0-9]/))  return <Text key={index} style={styles.linkText} onPress={() => searchWord(word + " " + wordArray[index+1])}>{word + " "}</Text>
+          else return <Text key={index}>{word + " "}</Text>
+        }
+      })
+      console.log("searching", PreSentences[Math.floor(Math.random() * 100)%3])
+      if(!isStart) return <>
+        <Text>{PreSentences[Math.floor(Math.random() * 100)%3]}</Text>
+        {filteredTexts}
+      </>
+      else return <>{filteredTexts}</>
+    }
+
+    const searchWord = (text) => {
+      console.log("console")
+      console.log("searchwords", text)
+      setUserQuestion(`what is ${text} in the Bible`)
+      setIsAnswer(true)
+    }
 
     const onErrorOk = async () => {
       setModalVisible(!modalVisible)
@@ -310,7 +414,6 @@ const SelectCategory = ({navigation}) => {
                   </View>
                 </>
               }
-            {/* </View> */}
             </ImageBackground>
             <Modal
               animationType="fade"
@@ -325,7 +428,7 @@ const SelectCategory = ({navigation}) => {
                         source={require('../../assets/cross.png')}
                         style={styles.walletIconStyle}
                   />
-                  <Text style={styles.walletBigText}>{error}</Text>
+                  <Text style={styles.walletBigText}>{`Hi there - you've used ${Max_Api_Count} chats this month. To continue, please enter your own `}<Text style={styles.linkText} onPress={() => handleOpenAILink("FAQ")}>OpenAI key</Text>{`.Don't have a key yet? It's easy & free to get one for personal use!`}{` You can get your own `}<Text style={styles.linkText} onPress={() => handleOpenAIWebsite()}>here</Text></Text>
                   <TouchableHighlight
                     style={styles.changePinBtn}
                     onPress={onErrorOk}
@@ -335,6 +438,12 @@ const SelectCategory = ({navigation}) => {
                 </View>
               </View>
             </Modal>
+            <Spinner
+              visible={loading}
+              textContent={'Response forthcoming...'}
+              textStyle={styles.spinnerTextStyle}
+              customIndicator={<SkypeIndicator color='green' />}
+            />
         </View>
     )
 }
@@ -348,7 +457,7 @@ const customHeaderComponent = (userName) => (
   <>
     <Text style={styles.helloTitle}>{`Hello`}</Text>
     <Text style={styles.name}>{userName}</Text>
-    <Text style={styles.text}>{`What is bothering you, \n My Blessed child?`}</Text>
+    <Text style={styles.text}>{`What is bothering you,\nMy Blessed child?`}</Text>
   </>
 )
 
@@ -369,13 +478,16 @@ const styles = StyleSheet.create({
       alignSelf: "center",
     },
     text: {
-      fontSize: 28,
+      fontSize: width / 100 * 6,
       fontWeight: '100',
       fontFamily: 'JosefinSans_300Light_Italic',
       textAlign: 'left',
-      marginLeft: 30,
+      marginHorizontal: width / 100 * 2,
       textTransform: 'uppercase',
-      marginTop: 140
+      marginTop: height / 100 * 5,
+      borderColor: "green",
+      borderRadius: 20,
+      padding: 5
     },
     helloTitle: {
       fontFamily: 'Le_Jour_Serif',
@@ -383,8 +495,8 @@ const styles = StyleSheet.create({
       textAlign: "center",
       textTransform: 'uppercase',
       color: "#9b9089",
-      marginBottom: -40,
-      marginTop: 140
+      marginBottom: -height / 100 * 5,
+      marginTop: height / 100 * 30
     },
     bottomTitle: {
       color: '#3c2819',
@@ -474,7 +586,7 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 5,
-      width: "70%"
+      width: "85%"
     },
     buttonGroup : {
       flexDirection: "row",
@@ -490,7 +602,13 @@ const styles = StyleSheet.create({
     buttonText: {
       paddingLeft: 3,
       textAlignVertical: "center",
-    }
+    },
+    linkText: {
+      color: 'green'
+    },
+    spinnerTextStyle: {
+      color: 'green',
+    },
   });
 
 export default SelectCategory

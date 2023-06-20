@@ -1,7 +1,7 @@
 import { Chat, defaultTheme } from '@flyerhq/react-native-chat-ui'
 import { useState, useContext, useEffect } from 'react'
-import { ImageBackground, StyleSheet, Text, View, Dimensions, TouchableOpacity, Image, Modal, TouchableHighlight} from 'react-native';
-import uuid from 'react-native-uuid';
+import { ImageBackground, StyleSheet, Text, View, Dimensions, TouchableOpacity, Image, Modal, TouchableHighlight } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { AppContext } from '../../AppContext';
 import { Configuration, OpenAIApi } from 'openai';
 import { Questions } from './Questions';
@@ -11,9 +11,12 @@ import {
   MenuOption,
   MenuTrigger,
  } from "react-native-popup-menu";
+import * as Linking from 'expo-linking';
 import { Ionicons, AntDesign, Feather} from '@expo/vector-icons';
-import { loadDataFromStorage, saveDataToStorage } from './utill';
+import { Max_Api_Count, loadDataFromStorage, loadOpenAIKey, saveApiUsingCount, saveDataToStorage } from './utill';
 import * as Clipboard from 'expo-clipboard';
+import { SkypeIndicator } from 'react-native-indicators';
+import Spinner from 'react-native-loading-spinner-overlay';
 
 import gpt_Avatar from '../../assets/cross.png';
 import me_Avatar from '../../assets/me.png';
@@ -24,41 +27,63 @@ const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
 const { width, height } = Dimensions.get('window');
 
 const DetailCategoryPage = ({navigation}) => {
-    const {userName, currentTopic, openAIkey} = useContext(AppContext)
+    const {userName, currentTopic, openAIkey, AIkeyUsingCount, setAIkeyUsingCount} = useContext(AppContext)
     const [messages, setMessages] = useState([])
     const [userQuestion, setUserQuestion] = useState(null)
     const [userId, setUserId] = useState("me")
     const [isGPT, setIsGPT] = useState(false)
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState(null)
+    const [isPreSentence, setIsPreSentence] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [messagesForApi, setMessagesForApi] = useState([
+      {
+        "role": "system", "content": "Will give answer based on what is there taken from the bible"
+      }
+    ]);
     const gpt = { id: '06c33e8b-e835-4736-80f4-63f44b66666c', imageUrl: gptAvatar}
     const me = { id: '06c33e8b-e835-4736-80f4-63f44b66666d', imageUrl: meAvatar }
+
+    useEffect(() => {
+      return navigation.addListener("focus", () => {
+        setMessages([])
+        setIsGPT(false)
+        setUserQuestion(null)
+        setModalVisible(false)
+        setError(null)
+        setLoading(false)
+        setMessagesForApi([
+          {
+            "role": "system", "content": "Will give answer based on what is there taken from the bible"
+          }
+        ])
+      });
+  }, [navigation]);
 
     const addMessage = async (message) => {
       let total = [message, ...messages]
       setMessages(total)
     }
 
-    const configuration = new Configuration({
-      apiKey: openAIkey,
-    });
-
-    const openai = new OpenAIApi(configuration);
-
     const handleSendPress = async (message) => {
         const textMessage = {
           author: me,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: message.text,
           type: 'text',
-          // status: "seen",
           isClicked: false,
           messageType: "online",
           isSent: true,
           isReceived: true
         }
         await addMessage(textMessage)
+        let tempMessage = [...messagesForApi];
+        tempMessage.push({
+          "role" : "user",
+          "content" : message.text
+        });
+        setMessagesForApi(tempMessage)
         setUserQuestion(message.text)
         setIsGPT(true)
     }
@@ -67,37 +92,58 @@ const DetailCategoryPage = ({navigation}) => {
       (
         async () => {
           if(isGPT) {
-            try {
-              let prompt = `"${userQuestion}" of answer based on what is there taken from the bible`
-              const completion = await openai.createCompletion({
-                model: "text-davinci-002",
-                // model: 'text-davinci-003',
-                // temperature: 0,
-                // max_tokens: 100,
-                // top_p: 1,
-                // frequency_penalty: 0.0,
-                // presence_penalty: 0.0,
-                // stop: ['/'],
-                prompt: prompt,
-              });
+            let willUseAIkey;
+            if(AIkeyUsingCount > 0) {
+              willUseAIkey = openAIkey
+            } else {
+              let savedOpenAIkey = await loadOpenAIKey();
+              willUseAIkey = savedOpenAIkey
+            }
 
-              let responseText = completion.data.choices[0].text;
+            console.log("willUseAIkey", willUseAIkey, AIkeyUsingCount)
+            const configuration = new Configuration({
+              apiKey: willUseAIkey,
+            });
+        
+            const openai = new OpenAIApi(configuration);
+            setLoading(true)
+            try {
+              // let prompt = `"${userQuestion}", ${userQuestion}" of answer based on what is there taken from the bible`
+              let prompt = userQuestion
+              const completion = await openai.createChatCompletion({
+                model: 'gpt-3.5-turbo',
+                messages: messagesForApi
+              });
+              let responseText = completion.data.choices[0].message.content.replace('As an AI language model, ', '');
 
               const textMessagefromGPT = {
                 author: gpt,
                 createdAt: Date.now(),
-                id: uuid.v1(),
-                text: `Let's see what the Bible teaches us about this.${responseText}`,
+                id: Crypto.randomUUID(),
+                text: searchLinkTexts(responseText, isPreSentence),
                 type: 'text',
                 messageType: "online",
                 isSent: true,
                 isReceived: true
               }
               await addMessage(textMessagefromGPT)
-              setIsGPT(false)
 
+              let tempMessage = [...messagesForApi];
+              tempMessage.push({
+                "role" : "assistant",
+                "content" : responseText
+              });
+              setMessagesForApi(tempMessage)
+
+              setIsGPT(false)
+              setIsPreSentence(true)
+              await saveApiUsingCount(AIkeyUsingCount - 1);
+              setAIkeyUsingCount(AIkeyUsingCount - 1);
+              setLoading(false)
             } catch (error) {
-              setError("It seems that your OpenAI key was expired")
+              console.log("chatgpt api error", error)
+              setLoading(false)
+              setError(`You used ${Max_Api_Count} times Global Api key in this month.\nSo you can use your own Api key.\nIt seems that your own OpenAI key was expired or you didn't input your own Api key`)
               setModalVisible(true)
             }
           } else if(!isGPT && messages.length >= 2) {
@@ -108,8 +154,43 @@ const DetailCategoryPage = ({navigation}) => {
 
     }, [isGPT])
 
+    const searchLinkTexts = (text, isStart) => {
+      let updatedText = text.replaceAll(" as an AI language model,", "");
+      updatedText = updatedText.replaceAll("I cannot", "ChatGPJEsus cannot")
+      let wordArray = updatedText.split(" ");
+      let filteredTexts = wordArray.map((word, index) => {
+        if(word.match(/[0-9]:[0-9]/)) return <Text key={index} style={styles.linkText} onPress={() => searchWord(wordArray[index - 1] + " " + word)}>{word + " "}</Text> 
+        else {
+          if((index < wordArray.length - 1) && wordArray[index + 1].match(/[0-9]:[0-9]/))  return <Text key={index} style={styles.linkText} onPress={() => searchWord(word + " " + wordArray[index+1])}>{word + " "}</Text>
+          else return <Text key={index}>{word + " "}</Text>
+        }
+      })
+      console.log("searching", isStart)
+      if(!isStart) return <>
+        <Text>{`Let's see what the Bible teaches us about that.\n`}</Text>
+        {filteredTexts}
+      </>
+      else return <>{filteredTexts}</>
+    }
+
+    const searchWord = (text) => {
+      console.log("console")
+      console.log("searchwords", text)
+      setUserQuestion(`what is ${text} in the Bible`)
+      setIsAnswer(true)
+    }
+
     const handleNaviate = (router) => {
       navigation.navigate(router)
+    }
+
+    const handleOpenAILink = (router) => {
+      setModalVisible(false)
+      navigation.navigate(router)
+    }
+
+    const handleOpenAIWebsite = () => {
+      Linking.openURL('https://platform.openai.com/account/api-keys');
     }
 
     const loadLastestData = async () => {
@@ -152,48 +233,48 @@ const DetailCategoryPage = ({navigation}) => {
 
         <View style={styles.container}>
             <ImageBackground source={require('../../assets/DetailCategory.png')} style={styles.image}>
-            <Menu style={styles.dropMenu}>
-              <MenuTrigger
-                  customStyles={{
-                      triggerWrapper: {
-                          top: -40,
-                          left: -10
-                      },
-                  }}
-              >
-                  <Ionicons name="reorder-three" size={50} color="#ba9e87" />
-              </MenuTrigger>
-              <MenuOptions>
-                <MenuOption onSelect={() => handleNaviate("moreCategory") } customStyles={{
-                  optionWrapper: {
-                    padding: 10
-                  },
-                }} >
-                  <Text style={styles.optionText}>Conversation</Text>
-                </MenuOption>
-                <MenuOption onSelect={() => handleNaviate("FAQ")} customStyles={{
-                  optionWrapper: {
-                    padding: 10
-                  },
-                }} >
-                  <Text style={styles.optionText}>FAQ</Text>
-                </MenuOption>
-                <MenuOption onSelect={() => handleNaviate("AboutUs")} customStyles={{
-                  optionWrapper: {
-                    padding: 10
-                  },
-                }} >
-                  <Text style={styles.optionText}>About Us</Text>
-                </MenuOption>
-                <MenuOption onSelect={() => loadLastestData()} customStyles={{
-                  optionWrapper: {
-                    padding: 10
-                  },
-                }} >
-                  <Text style={styles.optionText}>Load Last Chat</Text>
-                </MenuOption>
-              </MenuOptions>
-            </Menu>
+              <Menu style={styles.dropMenu}>
+                <MenuTrigger
+                    customStyles={{
+                        triggerWrapper: {
+                            top: -40,
+                            left: -10
+                        },
+                    }}
+                >
+                    <Ionicons name="reorder-three" size={50} color="#ba9e87" />
+                </MenuTrigger>
+                <MenuOptions>
+                  <MenuOption onSelect={() => handleNaviate("moreCategory") } customStyles={{
+                    optionWrapper: {
+                      padding: 10
+                    },
+                  }} >
+                    <Text style={styles.optionText}>Conversation</Text>
+                  </MenuOption>
+                  <MenuOption onSelect={() => handleNaviate("FAQ")} customStyles={{
+                    optionWrapper: {
+                      padding: 10
+                    },
+                  }} >
+                    <Text style={styles.optionText}>FAQ</Text>
+                  </MenuOption>
+                  <MenuOption onSelect={() => handleNaviate("AboutUs")} customStyles={{
+                    optionWrapper: {
+                      padding: 10
+                    },
+                  }} >
+                    <Text style={styles.optionText}>About Us</Text>
+                  </MenuOption>
+                  <MenuOption onSelect={() => loadLastestData()} customStyles={{
+                    optionWrapper: {
+                      padding: 10
+                    },
+                  }} >
+                    <Text style={styles.optionText}>Load Last Chat</Text>
+                  </MenuOption>
+                </MenuOptions>
+              </Menu>
               <Chat 
                 enableAnimation={true} 
                 messages={messages}
@@ -254,7 +335,7 @@ const DetailCategoryPage = ({navigation}) => {
                         source={require('../../assets/cross.png')}
                         style={styles.walletIconStyle}
                   />
-                  <Text style={styles.walletBigText}>{error}</Text>
+                  <Text style={styles.walletBigText}>{`Hi there - you've used ${Max_Api_Count} chats this month. To continue, please enter your own `}<Text style={styles.linkText} onPress={() => handleOpenAILink("FAQ")}>OpenAI key</Text>{`.Don't have a key yet? It's easy & free to get one for personal use!`}{` You can get your own `}<Text style={styles.linkText} onPress={() => handleOpenAIWebsite()}>here</Text></Text>
                   <TouchableHighlight
                     style={styles.changePinBtn}
                     onPress={onErrorOk}
@@ -264,6 +345,12 @@ const DetailCategoryPage = ({navigation}) => {
                 </View>
               </View>
             </Modal>
+            <Spinner
+              visible={loading}
+              textContent={'Response forthcoming...'}
+              textStyle={styles.spinnerTextStyle}
+              customIndicator={<SkypeIndicator color='green' />}
+            />
         </View>
     )
 }
@@ -297,13 +384,16 @@ const styles = StyleSheet.create({
       alignSelf: "center",
     },
     text: {
-      fontSize: 22,
+      fontSize: width / 100 * 6,
       fontWeight: '100',
       fontFamily: 'JosefinSans_300Light_Italic',
       textAlign: 'left',
-      marginLeft: 30,
-      marginBottom: -20,
-      textTransform: 'uppercase'
+      marginHorizontal: width / 100 * 2,
+      textTransform: 'uppercase',
+      marginTop: height / 100 * 5,
+      borderColor: "green",
+      borderRadius: 20,
+      padding: 5
     },
     helloTitle: {
       fontFamily: 'Le_Jour_Serif',
@@ -311,7 +401,8 @@ const styles = StyleSheet.create({
       textAlign: "center",
       textTransform: 'uppercase',
       color: "#9b9089",
-      marginBottom: -40
+      marginBottom: -height / 100 * 5,
+      marginTop: height / 100 * 30
     },
     chatContainer: {
       position: "absolute",
@@ -373,7 +464,7 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 5,
-      width: "70%"
+      width: "85%"
     },
     buttonGroup : {
       flexDirection: "row",
@@ -389,7 +480,13 @@ const styles = StyleSheet.create({
     buttonText: {
       paddingLeft: 3,
       textAlignVertical: "center",
-    }
+    },
+    linkText: {
+      color: 'green'
+    },
+    spinnerTextStyle: {
+      color: 'green',
+    },
   });
 
 export default DetailCategoryPage

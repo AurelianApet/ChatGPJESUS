@@ -1,7 +1,7 @@
 import { Chat, defaultTheme, Message } from '@flyerhq/react-native-chat-ui'
 import { useState, useContext } from 'react'
 import { ImageBackground, StyleSheet, Text, View, Dimensions, Image, Modal, TouchableHighlight } from 'react-native';
-import uuid from 'react-native-uuid';
+import * as Crypto from 'expo-crypto';
 import { AppContext } from '../../AppContext';
 import {
   Menu,
@@ -41,7 +41,7 @@ const APIKeyEnterPage = ({navigation}) => {
           const textMessage = {
             author: userId === "gpt" ? gpt : me,
             createdAt: Date.now(),
-            id: uuid.v1(),
+            id: Crypto.randomUUID(),
             text: apiKey,
             type: 'text',
             messageType: "online",
@@ -53,8 +53,8 @@ const APIKeyEnterPage = ({navigation}) => {
           await saveOpenAIKey(apiKey)
           setOpenAIkey(apiKey)
           setTimeout(() => {
-            navigation.navigate('nameEnter')
-          }, 1000)
+            navigation.navigate('selectCategory')
+          }, 500)
         } else {
           setError("Invalid OpenAI Key")
           setModalVisible(true)
@@ -157,9 +157,7 @@ const customBottomComponent = () => (
 )
 
 const customHeaderComponent = () => (
-  <>
-    {/* <Text style={styles.text}>Input Your OpenAI Key</Text> */}
-  </>
+  <></>
 )
 
 const styles = StyleSheet.create({
@@ -171,20 +169,14 @@ const styles = StyleSheet.create({
       flex: 1,
       resizeMode: 'cover',
       justifyContent: 'center',
-      
     },
     text: {
-      // color: 'white',
-      fontSize: 28,
+      fontSize: width / 100 * 6,
       fontWeight: '100',
       fontFamily: 'JosefinSans_300Light_Italic',
-      // textAlign: 'left',
-      marginHorizontal: 25,
+      marginLeft: width / 100 * 4,
       position: "absolute",
       bottom: height / 100 * 17,
-      // marginTop: 200,
-      // marginBottom: 0,
-      // marginBottom: -20,
       textTransform: 'uppercase'
     },
     chatContainer: {

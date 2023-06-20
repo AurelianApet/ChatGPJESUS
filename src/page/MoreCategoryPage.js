@@ -32,11 +32,11 @@ const SvgComponent = ({title, image}) => (
           y={120}
           fill="none"
           stroke="#fff"
-          strokeWidth={14}
+          strokeWidth={1}
           transform="rotate(-165)"
         />
       </G>
-      <SvgText fill="#000" fontSize="16" fontFamily="LibreBaskerville">
+      <SvgText fill="#000" fontSize={width / 100 * 4} fontFamily="LibreBaskerville">
         <TextPath href="#circle">
           <TSpan dx="0" dy={-20}>
             {title}
@@ -46,7 +46,7 @@ const SvgComponent = ({title, image}) => (
     </Svg>
     <View>
       <Image
-        style={{ height: 120, width: 120, borderRadius: 60,
+        style={{ height: width / 100 * 27, width: width / 100 * 27, borderRadius: 60,
           marginTop: 20 }}
         source={images[image]}
       />
@@ -107,13 +107,13 @@ const MoreCategoryPage = ({navigation}) => {
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('RAGE & ANGER')} >
                 <SvgComponent title={`RAGE & ANGER`} image={`anger`} />
-                <Text style={styles.imageDesTitle}>{`Feeling frustrated, irritated, or\nresentful due to injustices, violation\nof personal boundaries, etc.`}</Text>
+                <Text style={styles.imageDesTitle}>{`Feeling frustrated, irritated, or resentful due to injustices, violation of personal boundaries`}</Text>
               </TouchableOpacity>
               <TouchableOpacity
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('HOPELESSNESS')} >
                 <SvgComponent title={`HOPELESSNESS`} image={`hopelessness`} />
-                <Text style={styles.imageDesTitle}>{`Feeling disconnected, Isolated, or\nlacking meaningful social\nconnections, emotional distress`}</Text>
+                <Text style={styles.imageDesTitle}>{`Feeling disconnected, Isolated, or lacking meaningful social connections, emotional distress`}</Text>
               </TouchableOpacity>
             </View>
 
@@ -122,13 +122,13 @@ const MoreCategoryPage = ({navigation}) => {
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('JEALOUSY OR INFERIORITY')} >
                 <SvgComponent title={`JEALOUSY OR INFERIORITY`} image={`jealousy`} />
-                <Text style={styles.imageDesTitle}>{`Esentment, envy, or insecurity in\nresponse to the advantages, successes,\nor possessions of others`}</Text>
+                <Text style={styles.imageDesTitle}>{`Esentment, envy, or insecurity in response to the advantages, successes, or possessions of others`}</Text>
               </TouchableOpacity>
               <TouchableOpacity
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('SHAME OR GUILT')} >
                 <SvgComponent title={`SHAME OR GUILT`} image={`shame`} />
-                <Text style={styles.imageDesTitle}>{`Remorese or blame for something done\nor failed to do, or a sense of modal\nwrongdoing`}</Text>
+                <Text style={styles.imageDesTitle}>{`Remorese or blame for something done or failed to do, or a sense of modal wrongdoing`}</Text>
               </TouchableOpacity>
             </View>
 
@@ -137,13 +137,13 @@ const MoreCategoryPage = ({navigation}) => {
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('HELPLESSNESS')} >
                 <SvgComponent title={`HELPLESSNESS`} image={`helplessness`} />
-                <Text style={styles.imageDesTitle}>{`Fear, anxiety, worry, or apprehension\nabout potential threats, dangers, or\nuncertain situations`}</Text>
+                <Text style={styles.imageDesTitle}>{`Fear, anxiety, worry, or apprehension about potential threats, dangers, or uncertain situations`}</Text>
               </TouchableOpacity>
               <TouchableOpacity
               style={styles.buttonTouchStyle}
               activeOpacity={0.2} onPress={() => onSelectCategory('GRIEF & LOSS')} >
                 <SvgComponent title={`GRIEF & LOSS`} image={`loss`} />
-                <Text style={styles.imageDesTitle}>{`Feeling down, low, or feeling let\ndown, disillusioned`}</Text>
+                <Text style={styles.imageDesTitle}>{`Feeling down, low, or feeling let down, disillusioned`}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -161,14 +161,14 @@ const styles = StyleSheet.create({
       color: '#a48f85',
       textTransform: "uppercase",
       fontFamily: 'Le_Jour_Serif',
-      fontSize: 35,
+      fontSize: width / 100 * 7,
       letterSpacing: 4,
       alignSelf: "center",
     },
     cvTitle: {
       color: '#3c2819',
       fontFamily: 'AlexBrush_400Regular',
-      fontSize: 38,
+      fontSize: width / 100 * 7,
       letterSpacing: 2,
       alignSelf: 'flex-end',
       paddingRight: 10,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     bibleTitle: {
       textTransform: "uppercase",
       fontFamily: 'LibreBaskerville',
-      fontSize: 14,
+      fontSize: width / 100 * 3,
       alignSelf: "center",
       opacity: 0.8
     },
@@ -190,14 +190,14 @@ const styles = StyleSheet.create({
       alignItems: 'stretch',
       justifyContent: 'space-evenly',
       width: width,
-      marginBottom: 10
+      marginBottom: height / 100 * 2
     },
     buttonTouchStyle: {
       alignItems: 'center',
       flex: 1,
       width: width / 3,
       height: height / 5,
-      marginVertical: 10
+      marginVertical: height / 100 * 1.5
     },
     buttonImageIconStyle: {
       height: width / 4,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     },
     imageDesTitle: {
       fontFamily: 'LibreBaskerville',
-      fontSize: 8,
+      fontSize: width / 100 * 1.8,
       textAlign: 'center',
       marginTop: 3,
       textTransform: 'uppercase',
@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
     },
     cross: {
       position: "absolute",
-      top: 25,
-      right: 20,
+      top: height / 100 * 3,
+      right: width / 100 * 2
     },
     dropMenu: {
       position: "absolute",

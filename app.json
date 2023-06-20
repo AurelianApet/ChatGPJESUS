@@ -1,30 +1,67 @@
 {
   "expo": {
-    "name": "chatgpt-app",
-    "slug": "chatgpt-app",
+    "name": "chatGPJESUS",
+    "slug": "escarenft",
     "version": "1.0.0",
+    "scheme": "solcashapp",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/cross.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/2.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/4efbefe3-19cd-4fc4-81bf-2e91f2882dd8"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "kr.co.escare.n2e.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/running.png",
-        "backgroundColor": "#ffffff"
-      }
+        "foregroundImage": "./assets/cross.png",
+        "backgroundColor": "#00000000"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "wc"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "package": "kr.co.escare.n2e.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/siteicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "032054e0-9131-43d6-890f-cd8be84e1fad"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 31,
+            "targetSdkVersion": 31,
+            "buildToolsVersion": "29.0.3"
+          },
+          "ios": {
+            "deploymentTarget": "13.0"
+          }
+        }
+      ]
+    ]
   }
 }

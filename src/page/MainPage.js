@@ -1,6 +1,6 @@
 import { Chat, MessageType } from '@flyerhq/react-native-chat-ui'
 import { useState } from 'react'
-import uuid from 'react-native-uuid';
+import * as Crypto from 'expo-crypto';
 
 const MainPage = () => {
     const [messages, setMessages] = useState([])
@@ -15,12 +15,11 @@ const MainPage = () => {
         const textMessage = {
           author: user,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: message.text,
           type: 'text',
         }
         addMessage(textMessage)
-        // setUid(uid + 1)
     }
 
     return (

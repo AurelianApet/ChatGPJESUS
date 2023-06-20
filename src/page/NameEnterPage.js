@@ -1,7 +1,7 @@
-import { Chat, defaultTheme, Message } from '@flyerhq/react-native-chat-ui'
-import { useState, useContext, useEffect } from 'react'
+import { Chat, defaultTheme } from '@flyerhq/react-native-chat-ui'
+import { useState, useContext } from 'react'
 import { ImageBackground, StyleSheet, Text, View, Dimensions, Image, TouchableOpacity } from 'react-native';
-import uuid from 'react-native-uuid';
+import * as Crypto from 'expo-crypto';
 import { AppContext } from '../../AppContext';
 import {
   Menu,
@@ -13,6 +13,8 @@ import { Ionicons, AntDesign, Feather} from '@expo/vector-icons';
 
 import gpt_Avatar from '../../assets/cross.png';
 import me_Avatar from '../../assets/me.png';
+import axios from 'axios';
+import { loadApiUsingCount, loadMonth, Max_Api_Count, saveApiUsingCount, saveMonth } from './utill';
 
 const gptAvatar = Image.resolveAssetSource(gpt_Avatar).uri;
 const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
@@ -20,7 +22,7 @@ const meAvatar = Image.resolveAssetSource(me_Avatar).uri;
 const { width, height } = Dimensions.get('window');
 
 const NameEnterPage = ({navigation}) => {
-    const {setUserName} = useContext(AppContext)
+    const {setUserName, setAIkeyUsingCount} = useContext(AppContext)
     const [messages, setMessages] = useState([])
     const [userId, setUserId] = useState("me")
     const [isName, setIsName] = useState(false)
@@ -31,15 +33,14 @@ const NameEnterPage = ({navigation}) => {
         setMessages([message, ...messages])
     }
 
-    const handleSendPress = (message) => {
+    const handleSendPress = async (message) => {
         if(isName) return;
         const textMessage = {
           author: userId === "gpt" ? gpt : me,
           createdAt: Date.now(),
-          id: uuid.v1(),
+          id: Crypto.randomUUID(),
           text: message.text,
           type: 'text',
-          // status: "seen",
           messageType: "online",
           isSent: true,
           isReceived: true,
@@ -48,11 +49,20 @@ const NameEnterPage = ({navigation}) => {
         addMessage(textMessage)
         setIsName(true)
         setUserName(message.text)
+        let responseForTime = await axios.get(`https://www.google.com`)
+        let onlineMonth = new Date(responseForTime.headers.date).getMonth() + 1;
+        let savedMonth = await loadMonth();
+        if(onlineMonth !== savedMonth) {
+          await saveMonth(onlineMonth);
+          await saveApiUsingCount(Max_Api_Count)
+          setAIkeyUsingCount(Max_Api_Count)
+        } else {
+          let usingApiCount = await loadApiUsingCount();
+          setAIkeyUsingCount(usingApiCount)
+        }
         setTimeout(() => {
-          // setMessages([]);
-          // setIsName(false)
           navigation.navigate('selectCategory')
-        }, 1000)
+        }, 500)
     }
 
     const handleNaviate = (router) => {
@@ -147,6 +157,12 @@ const customBottomComponent = () => (
   <></>
 )
 
+const customHeaderComponent = (userName) => (
+  <>
+    <Text style={styles.text}>{`What is your Name?`}</Text>
+  </>
+)
+
 const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -156,18 +172,15 @@ const styles = StyleSheet.create({
       flex: 1,
       resizeMode: 'cover',
       justifyContent: 'center',
-      
-      // paddingBottom: 40
     },
     text: {
-      // color: 'white',
-      fontSize: 28,
+      fontSize: width / 100 * 6,
       fontWeight: '100',
       fontFamily: 'JosefinSans_300Light_Italic',
       textAlign: 'left',
-      marginLeft: 40,
+      marginLeft: width / 100 * 6,
       position: "absolute",
-      bottom: height / 100 * 17,
+      bottom: height / 100 * 18,
       textTransform: 'uppercase'
     },
     chatContainer: {
