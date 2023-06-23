@@ -5,7 +5,6 @@ import 'react-native-url-polyfill/auto';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import { useFonts } from "expo-font";
 import { AppContext } from './AppContext';
 import { MenuProvider } from 'react-native-popup-menu';
 import LeJourSerif from "./assets/LeJourSerif.ttf";
